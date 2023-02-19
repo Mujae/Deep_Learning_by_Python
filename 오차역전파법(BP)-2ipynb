@@ -1,0 +1,620 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "e1b77033-2d48-4cd1-918a-26afc21bed78",
+   "metadata": {},
+   "source": [
+    "# Relu  \n",
+    "ReLU의 장점: 부분 활성화 가능, 기울기 소실 문제를 sigmoid보단 잘 잡음, 계산이 간단."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "8a1d333e-817d-4f9d-8571-a56c2cf61382",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class Relu:\n",
+    "    def __init__(self):\n",
+    "        self.mask = None\n",
+    "    \n",
+    "    def forward(self, x):\n",
+    "        self.mask = (x<=0)\n",
+    "        out = x.copy()\n",
+    "        out[self.mask] = 0\n",
+    "        return out\n",
+    "    \n",
+    "    def backward(self, dout):\n",
+    "        dout[self.mask]=0\n",
+    "        dx=dout\n",
+    "        return dx"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c9cad1f2-6785-4911-a2b5-736f3caa2efb",
+   "metadata": {},
+   "source": [
+    "순전파의 입력인 x의 값이 0 이하인 인덱스는 True, 그 외는 False로"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "97960144-05ef-472e-a81d-972797070326",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[[ 1.  -0.5]\n",
+      " [-2.   3. ]]\n",
+      "[[False  True]\n",
+      " [ True False]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "x = np.array([[1.0, -0.5], [-2.0, 3.0]])\n",
+    "print(x)\n",
+    "mask = (x<=0)\n",
+    "\n",
+    "print(mask)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5ee48afa-28aa-4346-96fc-2d330e3eec22",
+   "metadata": {},
+   "source": [
+    "순전파 때 입력 값이 0 이하먄 -> 역전파 때의 값은 0임 **"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "befa5303-eb94-4f47-aa95-cfd9e1601aa7",
+   "metadata": {},
+   "source": [
+    "## Sigmoid  \n",
+    "Sigmoid의 문제점: 기울기소실문제, 업데이터 속도가 느림"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "366bef83-e442-4496-b61e-e0a161378a75",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class Sigmoid:\n",
+    "    def __init__(self):\n",
+    "        self.out = None\n",
+    "    \n",
+    "    def forward(self, x):\n",
+    "        out = 1/(1+np.exp(-x))\n",
+    "        self.out=out\n",
+    "        return out\n",
+    "    \n",
+    "    def backward(self, dout):\n",
+    "        dx = dout*(1.0-self.out)*self.out\n",
+    "        return dx"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f9c1f19f-8f29-46b7-a183-cc8c2e0d9d89",
+   "metadata": {},
+   "source": [
+    "순전파의 출력을 out에 보관 했다가 역전파 계산 때 그 값을 사용"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "182de566-a613-48a4-a222-932823178b4a",
+   "metadata": {},
+   "source": [
+    "# Affine/Softmax 계층  "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6e89caff-2e5c-4998-a560-6530ce92ec74",
+   "metadata": {},
+   "source": [
+    "## Affine"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "90d8820d-73c1-47a5-8101-c64ee560006a",
+   "metadata": {},
+   "source": [
+    "신경망의 순전파 때 수행하는 행렬의 곱은 기하학에서는 어파인 변환이라고 해서 어파인 변환을 수행하는 처리를 'Affine 계층'이라고 명명"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "0b9c9356-4331-4a67-82b2-c1135564fddb",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(2,)"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X = np.random.rand(2)\n",
+    "W = np.random.rand(2,3)\n",
+    "B = np.random.rand(3)\n",
+    "\n",
+    "X.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "a518317a-f1ab-4906-9782-89936a5bfdbf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Y = np.dot(X, W) + B"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2846ead1-b783-47b1-9fdb-e3ad899aa910",
+   "metadata": {},
+   "source": [
+    "행렬의 곱은 대응하는 차원의 수를 일치시켜야함"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b0603ae6-c917-4c28-99e8-bafd37cd3004",
+   "metadata": {},
+   "source": [
+    "배치용 Affine 계층"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "adb62a6c-1ed2-4b84-95e4-29405666d5eb",
+   "metadata": {},
+   "source": [
+    "배치용 Affine은 배치 데이터를 Affine하는 것. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "b1ef71e5-02f4-42bf-b92e-182ed65fff45",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_dot_W = np.array([[0,0,0], [10,10,10]])\n",
+    "B = np.array([1,2,3])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "57551de5-fc4f-4a91-a9c7-ac94769f37a5",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 0,  0,  0],\n",
+       "       [10, 10, 10]])"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X_dot_W"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "12dd8e37-c220-4a92-9380-99dc4329d486",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 1,  2,  3],\n",
+       "       [11, 12, 13]])"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X_dot_W + B"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "0d7a34a7-90e0-4d39-a7de-a1accedb8e98",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[1, 2, 3],\n",
+       "       [4, 5, 6]])"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dY = np.array([[1,2,3], [4,5,6]])\n",
+    "dY"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "009fac6a-14c1-4403-b97e-999f8dafc93a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([5, 7, 9])"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dB = np.sum(dY, axis=0)#행을 기준으로 더해준다~ 이말이거든\n",
+    "dB"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "197b78c8-3285-4049-8dc3-5fc043f6d9c0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class Affine:\n",
+    "    def __init__(self,W,b):\n",
+    "        self.W = W\n",
+    "        self.b = b\n",
+    "        self.x = None\n",
+    "        self.dW = None\n",
+    "        self.db = None\n",
+    "    \n",
+    "    def forward(self, x):\n",
+    "        self.x = x\n",
+    "        out = np.dot(x,self.W) +self.b\n",
+    "        return out\n",
+    "    \n",
+    "    def backward(self, dout):\n",
+    "        dx = np.dot(dout, self.W.T)#여기서 T는 전치행렬을 만들어주는 역할을함\n",
+    "        self.dW = np.dot(self.x.T, dout)\n",
+    "        self.db = np.sum(dout, axis=0)\n",
+    "        return dx"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1ce3778c-3b52-4729-9d4e-af6082ebba54",
+   "metadata": {},
+   "source": [
+    "## Softmax-with-loss"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cf966f9a-ca2e-42c7-b124-bb2d0c3e9466",
+   "metadata": {},
+   "source": [
+    "출력층에서 사용하는 소프트맥스~"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ca279786-07cf-45e8-8c8d-938b8d3b83e4",
+   "metadata": {},
+   "source": [
+    "신경망에서 수행하는 작업은 '학습'과 '추론' 두 가지.  \n",
+    "일반적으로 추론할 때는 Softmax 계층을 사용하지 않는다.  \n",
+    "신경망은 추론할 때는 마지막 Affine 계층의 ㅊ출력을 인식 결과로 이용함.  \n",
+    "또한, 신경망에서 정규화하지 않는 출력(softmax 앞의 Affine층을 출력)을 '점수'라고 함.  \n",
+    "즉, 추론에서는 답을 하나만 내는 경우에는 가장 높은 점수만 알면 되니 softmax가 필요 없으나 학습 때는 필요함"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "05d1e81c-cbb8-4ba6-a473-aea911beed00",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class SoftmaxWithLoss:\n",
+    "    def __init__(self):\n",
+    "        self.loss = None\n",
+    "        self.y = None\n",
+    "        self.t = None\n",
+    "    \n",
+    "    def forward(self, x, t):\n",
+    "        self.t = t\n",
+    "        self.y = softmax(x)\n",
+    "        self.loss = cross_entropy_error(self.y, self.t)\n",
+    "        return self.loss\n",
+    "    \n",
+    "    def backward(self, dout=1):\n",
+    "        batch_size = self.t.shape[0]\n",
+    "        dx = (self.y - self.t) / batch_size\n",
+    "        return dx"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d774c175-adf3-47f9-b152-9dda916be34a",
+   "metadata": {},
+   "source": [
+    "역전파 때는 전파하는 값을 배치의 수로 나눠서 데이터 1개당 오차를 앞 계층으로 전파하는 점 주의"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6065a2de-64da-44c7-94b7-ca67ceef93af",
+   "metadata": {},
+   "source": [
+    "# 오차역전파법을 적용한 신경망 구현"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "d90bb25c-3fcf-421d-9f01-a931323ff6db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import sys, os\n",
+    "sys.path.append(os.pardir)\n",
+    "import numpy as np\n",
+    "from common.layers import *\n",
+    "from common.gradient import numerical_gradient\n",
+    "from collections import OrderedDict\n",
+    "\n",
+    "class TwoLayerNet:#2층 구조\n",
+    "    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01):\n",
+    "        self.params = {}\n",
+    "        self.params['W1'] = weight_init_std*np.random.randn(input_size, hidden_size)\n",
+    "        self.params['b1'] = np.zeros(hidden_size)\n",
+    "        self.params['W2'] = weight_init_std*np.random.randn(hidden_size, output_size)\n",
+    "        self.params['b2'] = np.zeros(output_size)\n",
+    "        \n",
+    "        self.layers = OrderedDict()\n",
+    "        self.layers['Affine1'] = Affine(self.params['W1'], self.params['b1'])\n",
+    "        self.layers['Relu1'] = Relu()\n",
+    "        self.layersw['Affine2'] = Affine(self.params['W2'], self.params['b2'])\n",
+    "        self.lastLayer = SoftmaxWithLoss()\n",
+    "        \n",
+    "    def predict(self, x):\n",
+    "        for layer in self.layers.values():\n",
+    "            x = layer.forward(x)\n",
+    "        return x\n",
+    "    \n",
+    "    def loss(self, x, t):\n",
+    "        y = self.predict(x)\n",
+    "        y = np.argmax(y, axis=1)\n",
+    "        if t.ndim != 1: t = np.argmax(t, axis=1)\n",
+    "        \n",
+    "        accuracy = np.sum(y==t) / float(x.shape[0])\n",
+    "        return accuracy\n",
+    "    \n",
+    "    def numerical_gradient(self, x, t):\n",
+    "        loss_W = lambda W: self.loss(x, t)\n",
+    "        \n",
+    "        grads = {}\n",
+    "        grads['W1'] = numerical_gradient(loss_W, self.params['W1'])\n",
+    "        grads['b1'] = numerical_gradient(loss_W, self.params['b1'])\n",
+    "        grads['W2'] = numerical_gradient(loss_W, self.params['W2'])\n",
+    "        grads['b2'] = numerical_gradient(loss_W, self.params['b2'])\n",
+    "        \n",
+    "        return grads"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e2e95a03-f30a-46a2-bf96-ab5f466980d1",
+   "metadata": {},
+   "source": [
+    "여기서 OrderedDict는 딕셔너리에 추가한 순서를 기억하는 딕셔너리  \n",
+    "이것으로 forward와 backward가 편해짐"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2bbec151-aa90-4ec8-9a17-a6d02508d0a8",
+   "metadata": {},
+   "source": [
+    "## 오차 역전파법으로 구한 기울기 검증하기"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4c33cd2a-cfdb-4b85-8420-2c9c2508df78",
+   "metadata": {},
+   "source": [
+    "수치미분은 오차역전파법이 제대로 됐는지 검증하는 '기울기 확인'에 사용한다."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "44e08e65-6dc0-41b0-ac17-fe43f1cb1c7d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from dataset.mnist import load_mnist"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "f00e7031-7ff8-4e04-a6b4-85be454bbfc7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "W1:4.3558019149151917e-10\n",
+      "b1:2.732961564234568e-09\n",
+      "W2:5.115128229397296e-09\n",
+      "b2:1.3945341181265115e-07\n"
+     ]
+    }
+   ],
+   "source": [
+    "from two_layer_net import TwoLayerNet\n",
+    "\n",
+    "(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label= True)\n",
+    "network = TwoLayerNet(input_size=784, hidden_size= 50, output_size = 10)\n",
+    "\n",
+    "x_batch = x_train[:3]\n",
+    "t_batch = t_train[:3]\n",
+    "\n",
+    "grad_numerical = network.numerical_gradient(x_batch, t_batch)\n",
+    "grad_backprop = network.gradient(x_batch, t_batch)\n",
+    "\n",
+    "for key in grad_numerical.keys():\n",
+    "    diff = np.average(np.abs(grad_backprop[key]-grad_numerical[key]))\n",
+    "    print(key + \":\" + str(diff))\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "60f6ab4a-2cb6-4d13-8e5a-98ea170a58c7",
+   "metadata": {},
+   "source": [
+    "## 오차역전파법을 사용한 학습 구현"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "59c74751-ed6d-4eb3-9e02-a99e91dfdfae",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "0.13348333333333334 0.1424\n",
+      "0.9011166666666667 0.9048\n",
+      "0.9250333333333334 0.9282\n",
+      "0.9337166666666666 0.9347\n",
+      "0.9432 0.9429\n",
+      "0.94995 0.9472\n",
+      "0.95495 0.9503\n",
+      "0.9601166666666666 0.9548\n",
+      "0.9618 0.9563\n",
+      "0.9652833333333334 0.9587\n",
+      "0.9678166666666667 0.9616\n",
+      "0.97065 0.9635\n",
+      "0.97225 0.965\n",
+      "0.9731166666666666 0.9651\n",
+      "0.9748666666666667 0.9679\n",
+      "0.976 0.9676\n",
+      "0.9781333333333333 0.9682\n"
+     ]
+    }
+   ],
+   "source": [
+    "(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label= True)\n",
+    "network = TwoLayerNet(input_size=784, hidden_size= 50, output_size= 10)\n",
+    "\n",
+    "iters_num = 10000\n",
+    "train_size = x_train.shape[0]\n",
+    "batch_size= x_train.shape[0]\n",
+    "batch_size =100\n",
+    "learning_rate = 0.1\n",
+    "\n",
+    "train_loss_list = []\n",
+    "train_acc_list = []\n",
+    "test_acc_list = []\n",
+    "\n",
+    "iter_per_epoch = max(train_size / batch_size, 1)\n",
+    "for i in range(iters_num):\n",
+    "    batch_mask = np.random.choice(train_size, batch_size)\n",
+    "    x_batch = x_train[batch_mask]\n",
+    "    t_batch = t_train[batch_mask]\n",
+    "    \n",
+    "    grad = network.gradient(x_batch, t_batch)#오차전역파법으로 기울기 구하기\n",
+    "    \n",
+    "    for key in ('W1', 'b1', 'W2', 'b2'):\n",
+    "        network.params[key] -= learning_rate*grad[key]\n",
+    "        \n",
+    "    loss = network.loss(x_batch, t_batch)\n",
+    "    train_loss_list.append(loss)\n",
+    "    \n",
+    "    if i%iter_per_epoch == 0:\n",
+    "        train_acc = network.accuracy(x_train, t_train)\n",
+    "        test_acc = network.accuracy(x_test, t_test)\n",
+    "        train_acc_list.append(train_acc)\n",
+    "        test_acc_list.append(test_acc)\n",
+    "        print(train_acc, test_acc)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "563e0a2e-a8d9-4d47-99ae-f737544b2e04",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
